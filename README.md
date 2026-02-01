@@ -102,6 +102,12 @@ docker run -p 8501:8501 --env-file src/.env job-hunt-assistant
 * *(Note: 0.0.0.0 in the terminal logs means it is listening inside the container; you must use localhost in your browser).*
 
 ---
+### 2. Docker Compose
+**Assuming you are in the root directory**
+```bash
+docker docker compose up
+
+```
 
 ## 📂 Project Structure
 
