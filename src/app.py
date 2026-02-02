@@ -217,6 +217,8 @@ if submit:
             st.info(f"{q9_ans['result']}")
             full_report += f"### Elevator Pitch\n{q9_ans['result']}\n\n"
 
+
+        logger.info("✅ Analysis and Assessment Completed ..!")
         st.success("✅ Data successfully Processed!")
         # --- EXPORT BUTTON ---
         st.divider()

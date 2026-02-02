@@ -4,4 +4,5 @@
 .plk
 __pycache__/
 *.pdf
-
+vector_db
+src/test.py
