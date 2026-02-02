@@ -88,9 +88,10 @@ v2 = {
 
     # q9: "Elevator Pitch" is a better term than "Speech".
     "q9": """
-    Using the STAR Method (Situation, Task, Action, Result), draft a 2-minute "Elevator Pitch" for the candidate to use at 
-    the start of an interview.
-    - The pitch should answer "Tell me about yourself" by weaving the resume experience into a narrative that proves the
+    Consider the Job requirements and Candidate resume Using the STAR Method (Situation, Task, Action, Result), 
+    draft a 2-minute "Elevator Pitch" for the candidate to use at the start of an interview.
+    
+    - The pitch should answer "Tell me about yourself" by weaving the resume experience and matched skills into a narrative that proves the
       candidate is the perfect fit for THIS job description.
     """
 }
@@ -109,8 +110,8 @@ def get_prompt_ver(version: str)-> dict[str, str] | None:
         }
     try:
         prompt = prompt_version[version]
-        logger.info(f"[*] Return Prompt version {version}")
+        logger.info(f"ℹ️ Return Prompt version {version}")
         return prompt
     except Exception as e:
-        logger.exception(f"[*] Prompt version {version} Not Found!!\n\n{e}")
+        logger.warning(f"️⚠️️ Prompt version {version} Not Found!!\n\n{e}")
         return None

@@ -101,7 +101,7 @@ docker run -p 8501:8501 --env-file src/.env job-hunt-assistant
 ### 2. Docker Compose
 **Assuming you are in the root directory**
 ```bash
-docker docker compose up
+docker compose up
 
 ```
 

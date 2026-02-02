@@ -1,7 +1,7 @@
 # Libraries
 
 from ingestion import get_jd_from_url, get_pdf_text_pypdf, get_pdf_text_pdfplumber
-from recruiter_helper import get_prompt_ver
+from prompt_eng_recruiter import get_prompt_ver
 from rag_implementation import get_rag_chain
 from helper import extract_match_score
 from dotenv import load_dotenv
@@ -113,7 +113,11 @@ if submit:
 
     with st.spinner("Analysing Candidate Resume and Job Description.."):
         # 1. Build the RAG Chain with the Resume Data
-        qa_chain = get_rag_chain(resume_text, uploaded_resume.name)
+        try:
+            qa_chain = get_rag_chain(resume_text, uploaded_resume.name)
+        except:
+            st.error(f"☠️ Something went Wrong trying to process your request ..")
+            st.stop()
 
         # 2. Define your questions
         questions = get_prompt_ver(version="v2")
@@ -135,9 +139,13 @@ if submit:
 
         with tabs[0]:  # Q1, Q2, Q3
             st.markdown("### 🎯 Fit Assessment")
-            logger.info("[*] Entering Fit Assessment")
-            logger.info("[*] Match Details: LLM Processing Q3")
-            q3_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q3']}"})
+            logger.info("ℹ️ Entering Fit Assessment")
+            logger.info("ℹ️ Match Details: LLM Processing Q3")
+            try:
+                q3_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q3']}"})
+            except:
+                st.error(f"☠️ Something went Wrong trying to process your request ..")
+                st.stop()
             with st.expander("**Match Details:** "):
                 # Parse the number
                 score = extract_match_score(q3_ans['result'])
@@ -154,14 +162,14 @@ if submit:
                 # Add to Report
                 full_report += f"## Match Score: {score}%\n\n"
 
-            logger.info("[*] Processing Skills Check LLM Processing Q1")
+            logger.info("ℹ️ Processing Skills Check LLM Processing Q1")
             q1_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q1']}"})
             with st.expander("**Skills Check:**"):
                 st.write(f"{q1_ans['result']}")
                 # Add to Report
                 full_report += f"### Skills Check\n{q1_ans['result']}\n\n"
 
-            logger.info("[*] Processing Fit Check: LLM Processing Q2")
+            logger.info("ℹ️ Processing Fit Check: LLM Processing Q2")
             q2_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q2']}"})
             with st.expander("**Fit Check:**" ):
                 st.write(f"{q2_ans['result']}")
@@ -173,38 +181,38 @@ if submit:
             with col1:
                 st.info("Strengths",icon="💪")
                 ## LOGGING
-                logger.info("[*] Processing Candidate Strengths")
+                logger.info("ℹ️ Processing Candidate Strengths")
                 q4_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q4']}"})
                 st.write(q4_ans['result'])
                 full_report += f"### Strengths\n{q4_ans['result']}\n\n"
             with col2:
-                logger.info("[*] Processing Candidate Opportunities")
+                logger.info("ℹ️ Processing Candidate Opportunities")
                 st.warning("Opportunities", icon="🌤️")
                 q5_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q5']}"})
                 st.write(q5_ans['result'])
                 full_report += f"### Opportunities\n{q5_ans['result']}\n\n"
             with col3:
                 st.error("Weaknesses",icon="🚨")
-                logger.info("[*] Processing Candidate Weaknesses")
+                logger.info("ℹ️ Processing Candidate Weaknesses")
                 q6_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q6']}"})
                 st.write(q6_ans['result'])
                 full_report += f"### Red Flags\n{q6_ans['result']}\n\n"
 
         with tabs[2]:  # Q7, Q8
             st.markdown("### 📝 Application Kit")
-            logger.info("[*] Processing Cover Letter")
+            logger.info("ℹ️ Processing Cover Letter")
             q7_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q7']}"})
             with st.expander("Draft Cover Letter"):
                 st.write(q7_ans['result'])
                 full_report += f"### Red Flags\n{q6_ans['result']}\n\n"
-            logger.info("[*] Processing How to help the Candidate Stand Out")
+            logger.info("ℹ️ Processing How to help the Candidate Stand Out")
             q8_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q8']}"})
             with st.expander("**How to Stand Out:**"):
                 st.write(f"{q8_ans['result']}")
                 full_report += f"### Differentiators\n{q8_ans['result']}\n\n"
         with tabs[3]: # Q9
             st.subheader("🎤 Interview Elevator Pitch")
-            logger.info(f"[*] Processing STAR Framework")
+            logger.info(f"ℹ️ Processing STAR Framework")
             q9_ans = qa_chain.invoke({"query": f"{base_query}\n\n{questions['q9']}"})
             st.info(f"{q9_ans['result']}")
             full_report += f"### Elevator Pitch\n{q9_ans['result']}\n\n"

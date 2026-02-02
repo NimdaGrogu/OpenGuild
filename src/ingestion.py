@@ -28,7 +28,7 @@ def get_jd_from_url(url) -> Optional[str]:
     :return:
     """
     try:
-        logger.info(f"[*] Loading URL .. {url}")
+        logger.info(f"ℹ️ Loading URL .. {url}")
         loader = WebBaseLoader(url,
                                raise_for_status=True,
                                requests_kwargs={
@@ -50,7 +50,7 @@ def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[tuple]:
     import pypdf
     try:
         # Read the PDF file directly from the stream
-        logger.info(f"[*] Reading PDF. {uploaded_file.name}")
+        logger.info(f"ℹ️ Reading PDF. {uploaded_file.name}")
         pdf_reader = pypdf.PdfReader(uploaded_file)
         text = ""
         for page in pdf_reader.pages:
@@ -66,7 +66,7 @@ def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[tuple]:
 def get_pdf_text_pdfplumber(uploaded_file, verbose=False)-> Optional[tuple]:
     import pdfplumber
     try:
-        logger.info(f"[*] Reading PDF. {uploaded_file.name}")
+        logger.info(f"ℹ️ Reading PDF. {uploaded_file.name}")
         with pdfplumber.open(uploaded_file) as pdf:
             text = ""
             for page in pdf.pages:
