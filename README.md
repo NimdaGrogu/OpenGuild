@@ -26,22 +26,6 @@ A professional Streamlit application powered by **LangChain** and **OpenAI (GPT-
 ![aijobhuntool.png](aijobhuntool.png)
 ---
 
-## ⚙️ Configuration (API Key)
-
-This project requires an OpenAI API key to run.
-
-1. **Get your key**: Sign up at [platform.openai.com](https://platform.openai.com/).
-2. **Create the secrets file**:
-Create a file named `.env` in the `src/` folder (or project root).
-3. **Add your key**:
-Open the `.env` file and add the following line:
-```bash
-OPENAI_API_KEY=sk-your-actual-api-key-here
-
-```
-
-
-
 > **⚠️ Security Note:** Never commit your `.env` file to GitHub. It is already included in `.gitignore`.
 
 ---
@@ -58,9 +42,20 @@ OPENAI_API_KEY=sk-your-actual-api-key-here
 ```bash
 git clone https://github.com/NimdaGrogu/job-hunt-assistant.git
 cd job-hunt-assistant
+```
+## ⚙️ Configuration (API Key)
+
+This project requires an OpenAI API key to run.
+
+1. **Get your key**: Sign up at [platform.openai.com](https://platform.openai.com/).
+2. **Create the secrets file**:
+Create a file named `.env` in the `src/` folder (or project root).
+3. **Add your key**:
+Open the `.env` file and add the following line:
+```bash
+OPENAI_API_KEY=sk-your-actual-api-key-here
 
 ```
-
 ### 2. Install Dependencies
 
 ```bash
