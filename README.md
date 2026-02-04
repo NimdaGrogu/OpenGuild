@@ -54,8 +54,9 @@ Create a file named `.env` in the `src/` folder (or project root).
 Open the `.env` file and add the following line:
 ```bash
 OPENAI_API_KEY=sk-your-actual-api-key-here
-
+VERBOSE_RAG_LOGS=false 
 ```
+**When VERBOSE_RAG_LOGS is enabled you will see Callback in the application logs**
 ### 2. Install Dependencies
 
 ```bash

@@ -27,7 +27,13 @@ def get_jd_from_url(url) -> Optional[str]:
     :param url:
     :return:
     """
+    from urllib.parse import urlparse
+
+
     try:
+        url_validation = urlparse(url)
+        # Check if it has both a scheme (http/https) and a network location (domain)
+        all([url_validation.scheme, url_validation.netloc])
         logger.info(f"ℹ️  Loading URL .. {url}")
         loader = WebBaseLoader(url,
                                raise_for_status=True,
@@ -35,15 +41,19 @@ def get_jd_from_url(url) -> Optional[str]:
                                    "headers": {
                                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
                                    },
-                               }
+                               },
+                               show_progress=True
                                )
         docs = loader.load()
-        # Conbine content from all pages found (maybe just one)
+        # Combine content from all pages found (maybe just one)
         return " ".join([d.page_content for d in docs])
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error fetching URL: {e}")
+    except Exception as e:
+        logger.error(f"❌ Error Format URL: {e}")
         return None
-0
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"❌ Error fetching URL: {e}")
+        return None
+
 
 # Function 2: Extract Text from Uploaded PDF
 def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[tuple]:

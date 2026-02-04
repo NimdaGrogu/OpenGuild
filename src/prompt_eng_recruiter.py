@@ -1,4 +1,6 @@
 import logging
+import re
+
 from rich.logging import RichHandler
 # Configure basic config with RichHandler
 logging.basicConfig(
@@ -44,36 +46,38 @@ v2 = {
     """,
 
     # q3: Extremely strict to ensure your Python regex code works.
-    "q3": """
-    Evaluate the match percentage based on skills and experience overlap.
-    Output ONLY the integer number between 0 and 100.
-    Do not output the % sign. Do not output any text or explanation. Just the number.
+    "q3": """ 
+     Conduct a gap analysis between the provided Job Description and the Resume and provide a job Match score.
+    
+    Output Format:
+        
+    - Output ONLY the integer number between 0 and 100.
+    - Do not output the % sign. 
+    - Do not output any text or explanation. Just the number.
     """,
 
     # q4: Focus on "selling points".
     "q4": """
-    Identify the candidate's top 3 "Selling Points" for this specific role. 
+    Identify the candidate's "Selling Points" for this specific role. 
     These should be unique strengths (e.g., specific certifications, years of experience in a niche tool, or impressive metrics) that align with the job description.
     Use bullet points.
     """,
 
     # q5: "Opportunities" usually means "Upskilling".
     "q5": """
-    Identify 2 specific areas where the candidate could improve their profile to better match this job description.
+    Identify specific areas where the candidate could improve their profile to better match this job description.
     Focus on skills or certifications mentioned in the JD that are missing or weak in the resume.
     Provide actionable advice (e.g., "Gain certification in AWS").
     """,
 
     # q6: "Weaknesses" refers to hard gaps (Dealbreakers).
     "q6": """
-    Identify any potential "Red Flags" or critical missing requirements.
-    (e.g., Short tenure at previous jobs, missing a required degree, or lack of critical 'Must-Have' experience).
-    Be critical.
+    Identify any potential "Red Flags" or critical missing requirements of the candidate.    
     """,
 
     # q7: Added "Tone" and "Structure" to make it usable.
     "q7": """
-    Draft a cover letter for this specific job application.
+    Draft a cover letter for this specific job description.
     - Structure: Standard business letter format.
     - Tone: Confident, Professional, and Enthusiastic.
     - Content: Use the candidate's real name and contact info from the header. Highlight the 2 most relevant projects from 
@@ -82,14 +86,13 @@ v2 = {
 
     # q8: Differentiators.
     "q8": """
-    Based on the company's requirements, suggest 3 creative ways the candidate can stand out during the interview process.
+    Suggest creative ways the candidate can stand out during the interview process.
     (e.g., "Bring a portfolio showing your X project", "Research the company's recent merger with Y").
     """,
 
     # q9: "Elevator Pitch" is a better term than "Speech".
     "q9": """
-    Consider the Job requirements and Candidate resume Using the STAR Method (Situation, Task, Action, Result), 
-    draft a 2-minute "Elevator Pitch" for the candidate to use at the start of an interview.
+    Using the STAR Method (Situation, Task, Action, Result), draft a 3-minute "Elevator Pitch" for the candidate to use at the start of an interview.
     
     - The pitch should answer "Tell me about yourself" by weaving the resume experience and matched skills into a narrative that proves the
       candidate is the perfect fit for THIS job description.
@@ -98,28 +101,34 @@ v2 = {
 
 # Define the Prompt, this tells the LLM how to behave
 prompt_template = """
-        Act as a Senior Technical Recruiter, you are fair, strict, analytical, and detail-oriented.
+        Act as an expert Technical Recruiter with 15 years of experience in talent acquisition, you are strict,analytical,and detail-oriented.
         Your goal is to analyze the Candidate's Resume against the Job Description.
-
-        Context (Resume): {context}
-
-        User Query: {question}
-
+        ####
+        Context (Resume): 
+        {context}
+        ####
+        User Query: 
+        {question}
+        ####
         Your task are the following:
-        1-Answer the query using ONLY the information provided in the context. 
-        If the information is not in the resume, explicitly state "Not mentioned in resume" rather than guessing.
-        2- Fairly Analyze and Interpret the candidate resume based on the job description and provide a professional assessment.
+        
+        1-Answer the query using ONLY the information provided in the context. If the information is not in the resume, 
+        explicitly state "Not mentioned in resume" rather than guessing.
+        2-Fairly Analyze and Interpret the candidate resume based on the job description and provide a professional assessment.
         """
 
-def jd_as_context(jd: str)->str:
+def jd_as_context(jd_input: str)->str:
     """
     This function creates a Based Query that combines the job description
-    :param jd:
+    :param jd_input:
     :return:
     """
+
     # Combining the Job Description as a context in the base query
-    base_query = f"Based on this Job Description: \n\n {jd} \n\n Answer this: "
-    return base_query
+    base_prompt_jd_context = (f"Consider the following Job Description:\n#####\n{jd_input}\n#####\nFilter Out unnecessary information like (Perks and Salary). "
+                                f"Only focus on the Job Description and Requirements, thereafter use the Job Description to Answer this:")
+    return base_prompt_jd_context
+
 
 def get_prompt_ver(version: str)-> dict[str, str] | None:
     """

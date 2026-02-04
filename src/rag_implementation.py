@@ -51,11 +51,22 @@ def clean_filename(name: str):
 def get_rag_chain(resume_text, resume_file_name):
 
 
-    # Initialize the OpenAI Embeddings model with API credentials
+    # OpenAI Embeddings model with API credentials
+    #'text-embedding-3-small'  for high efficiency and lower cost
     embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
         api_key=os.getenv("OPENAI_API_KEY"),  # OpenAI API key for authentication
-        chunk_size=10,
+        #chunk_size=100,
         max_retries=5
+    )
+
+    # SPLITTER
+    # chunk_size=1000: Captures one full job role
+    # chunk_overlap=200: Prevents cutting off the "Skills" list headers.
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        separators=["\n\n", "\n", "●", "•", " ", ""]  # specialized separators for bullets
     )
 
     ## Vector DB Persistence
@@ -81,7 +92,7 @@ def get_rag_chain(resume_text, resume_file_name):
         logger.warning("⚠️ No vector store found ..")
         # 1. Split the text into chunks
         logger.info("ℹ️  Split text into chunks")
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=100)
+
         chunks = text_splitter.split_text(resume_text)
 
         try:
@@ -114,6 +125,7 @@ def get_rag_chain(resume_text, resume_file_name):
         chain_type="stuff",
         retriever=retriever,
         return_source_documents=True,
+        verbose=True,
         chain_type_kwargs={"prompt": prompt}
     )
 

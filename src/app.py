@@ -3,7 +3,7 @@
 from ingestion import get_jd_from_url, get_pdf_text_pypdf, get_pdf_text_pdfplumber
 from prompt_eng_recruiter import get_prompt_ver, jd_as_context
 from rag_implementation import get_rag_chain
-from helper import extract_match_score
+from helper import extract_match_score, DebugCallbackHandler
 from css_template import sidebar_footer_style
 from dotenv import load_dotenv
 import streamlit as st
@@ -15,8 +15,8 @@ from rich.logging import RichHandler
 # Configure basic Logging config with RichHandler
 logging.basicConfig(
     level=logging.INFO,
-    format="%(message)s", # Rich handles the timestamp and level separately
-    datefmt="[%X]",
+    format="%(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[RichHandler(rich_tracebacks=True)]
 )
 
@@ -54,6 +54,9 @@ with st.sidebar:
             del st.session_state['analysis_results']
         if 'full_report' in st.session_state:
             del st.session_state['full_report']
+
+        os.environ.pop("VERBOSE_RAG_LOGS", None)
+
 
         # Force the app to rerun immediately
         st.rerun()
@@ -111,53 +114,96 @@ if submit:
             # 1. Setup Phase
             # Initialize the progress bar
             progress_bar = st.progress(0, text="Initializing AI 🧠 ..")
+            # 2. Define the RAG Run Config dynamically
+            rag_run_config = {}
+            enable_verbose = os.getenv("VERBOSE_RAG_LOGS", "false")
+            if enable_verbose == 'True' or enable_verbose == 'true':
+                logger.info("🔧 Verbose RAG Logging is ENABLED")
+                debug_handler = DebugCallbackHandler()
+                # Pass the handler if enabled
+                rag_run_config = {"callbacks": [debug_handler]}
+            else:
+                logger.info("🔧 Verbose RAG Logging is DISABLED")
+                # Empty config means no extra callbacks
+                rag_run_config = {}
 
+             # Defining the RAG Chain
             qa_chain = get_rag_chain(resume_text, uploaded_resume.name)
+            # Extrating the prompts to use
             questions = get_prompt_ver(version="v2")
-            query = jd_as_context(jd=job_description)
+            # Combining the Job Description as a context in base query
+            query = jd_as_context(jd_input=job_description)
 
             # Storing the RESULTS
             results = {}
 
             # 2. Q3 Match Score (10%)
             progress_bar.progress(10, text="Calculating Match Score... (10%)")
-            q3_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q3']}"})
-            results['q3'] = q3_ans['result']
+            logger.info(f" ✅ Analysis and Assessment Start ...")
+
+            q3_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q3']}"},
+                config=rag_run_config
+                )
             results['score'] = extract_match_score(q3_ans['result'])
 
             # 3. Q1 Skills (20%)
             progress_bar.progress(20, text="Analyzing Skills Gap... (20%)")
-            q1_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q1']}"})
+            q1_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q1']}"},
+                config=rag_run_config
+            )
             results['q1'] = q1_ans['result']
 
             # 4. Q2 Fit Check (30%)
             progress_bar.progress(30, text="Evaluating Cultural & Technical Fit... (30%)")
-            q2_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q2']}"})
+            q2_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q2']}"},
+                config=rag_run_config
+            )
             results['q2'] = q2_ans['result']
 
             # 5. SWOT Analysis
             progress_bar.progress(40, text="Identifying Strengths... (40%)")
-            q4_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q4']}"})
+            q4_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q4']}"},
+                 config=rag_run_config
+            )
             results['q4'] = q4_ans['result']
 
             progress_bar.progress(55, text="Identifying Opportunities... (55%)")
-            q5_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q5']}"})
+            q5_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q5']}"},
+                config=rag_run_config
+            )
             results['q5'] = q5_ans['result']
 
             progress_bar.progress(70, text="Checking for Red Flags... (70%)")
-            q6_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q6']}"})
+            q6_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q6']}"},
+                config=rag_run_config
+            )
             results['q6'] = q6_ans['result']
 
-            # 6. App Kit
+
             progress_bar.progress(80, text="Drafting Cover Letter... (80%)")
-            q7_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q7']}"})
+            q7_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q7']}"},
+            config=rag_run_config
+            )
             results['q7'] = q7_ans['result']
 
             progress_bar.progress(90, text="Generating Interview Tips... (90%)")
-            q8_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q8']}"})
+            q8_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q8']}"},
+            config=rag_run_config
+            )
             results['q8'] = q8_ans['result']
 
-            q9_ans = qa_chain.invoke({"query": f"{query}\n\n{questions['q9']}"})
+            q9_ans = qa_chain.invoke({
+                "query": f"{query}\n\n{questions['q9']}"},
+                config=rag_run_config
+            )
             results['q9'] = q9_ans['result']
 
             # Finish
@@ -185,7 +231,7 @@ if submit:
             # ... (Insert your history saving code here) ...
 
             st.success("✅ Analysis and Assessment Completed ..!")
-            logger.info("✅ Analysis stored in Session State.")
+            logger.info(f" ✅ Analysis and Assessment Completed ..!")
 
         except Exception as e:
             st.error(f"☠️ An error occurred: {e}")
