@@ -1,6 +1,6 @@
 # Libraries
 
-from ingestion import get_jd_from_url, get_pdf_text_pypdf, get_pdf_text_pdfplumber, get_pdf_text_pymupdf
+from ingestion import get_jd_with_playwright, get_pdf_text_pdfplumber
 from prompt_eng_recruiter import get_prompt_ver, jd_as_context
 from rag_implementation import get_rag_chain
 from helper import extract_match_score, DebugCallbackHandler
@@ -41,7 +41,8 @@ with st.sidebar:
                            max_chars=5000,
                            label="Job Description URL ")
     # Input 2: Raw text (Job Description)
-    jd_text = st.text_input("Job Description Raw Text", max_chars=5000)
+    #jd_text = st.text_input("Job Description Raw Text", max_chars=5000)
+    jd_text = st.text_input("Job Description Raw Text")
     # Input 3: Upload the PDF
     uploaded_resume = st.file_uploader("Upload Candidate Resume (PDF)", type=["pdf"])
     # Button to trigger analysis
@@ -97,7 +98,7 @@ if submit:
 
     # --- Job Description Validation ---
     if jd_url:
-        job_description = get_jd_from_url(jd_url)
+        job_description = get_jd_with_playwright(jd_url)
         if job_description is None:
             st.error("❌ Something went wrong accessing the URL.")
             st.stop()
