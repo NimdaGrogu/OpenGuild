@@ -1,10 +1,14 @@
 import requests
 from langchain_community.document_loaders import WebBaseLoader
-from typing import Optional
 
 import logging
+import asyncio
+from typing import Optional
+from langchain_community.document_loaders import PlaywrightURLLoader
 from rich.logging import RichHandler
+from bs4 import BeautifulSoup
 
+from rich.logging import RichHandler
 # Configure basic config with RichHandler
 logging.basicConfig(
     level=logging.INFO,
@@ -17,8 +21,44 @@ logger = logging.getLogger("ingestion")
 
 # Function 1: Extract Text from Job Description URL
 """
-Pending wrapper Funtion to validate and sanitize the input 
+Pending wrapper Function to validate and sanitize the input 
 """
+
+
+def get_jd_with_playwright(url: str) -> Optional[str]:
+    """
+    Uses a headless browser to load JS-heavy job boards.
+    """
+    try:
+        logger.info(f"🚀 Launching browser for: [bold cyan]{url}[/bold cyan]", extra={"markup": True})
+
+        # remove_selectors helps strip out nav, footers, and scripts automatically
+        loader = PlaywrightURLLoader(
+            urls=[url],
+            remove_selectors=["header", "footer", "nav", ".cookie-banner", "script", "style"],
+        )
+
+        # PlaywrightURLLoader.load() is synchronous, but uses asyncio under the hood
+        docs = loader.load()
+
+        if not docs or len(docs[0].page_content) < 200:
+            logger.warning("⚠️ Content seems too short. The page might still be loading or blocked.")
+            return None
+
+        # Clean up the whitespace and formatting
+        raw_text = docs[0].page_content
+        lines = (line.strip() for line in raw_text.splitlines())
+        clean_text = "\n".join(chunk for chunk in lines if chunk)
+
+        logger.info(f"✅ Successfully extracted {len(clean_text)} characters.")
+        if clean_text:
+            logger.info("\n--- EXTRACTED CONTENT PREVIEW ---")
+            logger.info(clean_text[:1000])  # Print first 1000 characters
+        return clean_text
+
+    except Exception as e:
+        logger.error(f"❌ Playwright Error: {e}")
+        return None
 
 
 def get_jd_from_url(url) -> Optional[str]:
