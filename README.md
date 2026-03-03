@@ -11,6 +11,7 @@ A professional Streamlit application powered by **LangChain** and **OpenAI (GPT-
 * ✅ Skills Gap Analysis (Table format).
 * 📊 Fit Score (0-100%) with visual progress bar.
 * 📈 SWOT Analysis (Strengths, Weaknesses/Opportunities).
+* **Application Tracking:** Helps the Candidate, to track job applications and follow up 
 
 * **Application Kit:** Generates a tailored Cover Letter and Interview Elevator Pitch.
 * ⚙️ Export: Download the full analysis as a Markdown report.
@@ -126,7 +127,6 @@ job-hunt-assistant/
 Next Features:
 
 * **Session History:** Automatically saves analyzed candidates to a sidebar history, allowing recruiters to switch between profiles without re-running the analysis.
-* **Application Tracking:** Helps the Candidate, to track job applications and follow up (Implementing SQLAgent)
 * **LLM as Judge:** Integrate Gemini LLM to perform guardrails ensuring fair evaluation of the candidate 
 regardless of skin color, ethnicity, socio-economic position, and religion.
 
