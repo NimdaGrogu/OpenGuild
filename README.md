@@ -1,31 +1,50 @@
 
-# 👔 AI Recruiter Assistant (Job Hunt Helper)
+# 👔 AI Job Hunt Assistant
+
+An intelligent, dual-purpose application designed to optimize the job search process. It combines a **RAG-powered Resume Analyzer** to evaluate candidate fit against job descriptions with an integrated **Job Application Tracker** to manage the hiring pipeline.
+
+Built with Python, Streamlit, LangChain, and OpenAI, and fully containerized with Docker.
+
 ---
-A professional Streamlit application powered by **LangChain** and **OpenAI (GPT-4o)**. This tool helps job seekers and recruiters analyze resumes against specific job descriptions using RAG (Retrieval-Augmented Generation).
 
-## 🚀 Features
+## ✨ Key Features
 
-* **Resume Parsing:** Extracts text from PDF resumes.
-* **Job Description Scraping:** automatically scrapes text from a provided Job URL.
-* **AI Analysis:** Uses RAG to answer specific questions:
-* ✅ Skills Gap Analysis (Table format).
-* 📊 Fit Score (0-100%) with visual progress bar.
-* 📈 SWOT Analysis (Strengths, Weaknesses/Opportunities).
-* **Application Tracking:** Helps the Candidate, to track job applications and follow up 
+### 🔍 1. AI Resume Analyzer
+* **Semantic Match Scoring:** Uses vector embeddings (FAISS) to calculate a 0-100% quantitative fit score based on hard skills, experience, and industry context.
+* **Smart PDF Parsing:** Implements layout-aware document chunking using PyMuPDF to accurately read complex, multi-column resumes without losing context.
+* **Comprehensive SWOT Analysis:** Automatically generates Strengths, Weaknesses, Opportunities, and Threats for the candidate relative to the specific role.
+* **Automated Application Kit:** Drafts a tailored cover letter and a STAR-method elevator pitch to prepare for interviews.
+* **Exportable Reports:** Download the full analysis as a formatted Markdown file.
 
-* **Application Kit:** Generates a tailored Cover Letter and Interview Elevator Pitch.
-* ⚙️ Export: Download the full analysis as a Markdown report.
-* Exportable Reports: One-click download of the entire analysis (SWOT, Scores, Cover Letter) as a Markdown file.
-* Dockerized Deployment: Fully containerized with docker-compose for consistent performance across any environment.
-* Debug Mode: Optional verbose logging configuration to trace LLM prompts and responses for development.
+### 📊 2. Job Application Tracker
+* **Seamless Integration:** One-click save from the Analyzer directly to your Tracker, auto-extracting the Company Name and Job Title using structured LLM outputs.
+* **Visual Dashboard:** Real-time metrics and charts displaying pipeline health, interview statuses, and application momentum over time.
+* **Interactive Data Editor:** Update application statuses (e.g., "Applied" -> "Interviewing") directly within the UI.
+* **Persistent Storage:** Data is saved locally via CSV, ensuring your pipeline survives container restarts.
 
-## 🛠️ Tech Stack
+---
 
+## 🛠️ Technology Stack
 * **Frontend:** Streamlit
-* **LLM Orchestration:** LangChain
-* **AI Model:** OpenAI GPT-4o
-* **Vector Store:** FAISS
-* **Containerization:** Docker
+* **AI/LLM:** LangChain, OpenAI (`gpt-4o`, `text-embedding-3-small`)
+* **Vector Database:** FAISS (Local)
+* **Data Processing:** Pandas, PyMuPDF, pdfplumber
+* **Deployment:** Docker & Docker Compose
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+* Docker and Docker Compose installed on your machine.
+* An OpenAI API Key.
+
+### Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/yourusername/job-hunt-assistant.git](https://github.com/yourusername/job-hunt-assistant.git)
+   cd job-hunt-assistant
 ---
 ![aijobhuntool.png](aijobhuntool.png)
 ---
@@ -46,6 +65,7 @@ A professional Streamlit application powered by **LangChain** and **OpenAI (GPT-
 ```bash
 git clone https://github.com/NimdaGrogu/job-hunt-assistant.git
 cd job-hunt-assistant
+touch src/job_tracker.csv
 ```
 ## ⚙️ Configuration (API Key)
 
@@ -113,13 +133,17 @@ docker compose up
 ## 📂 Project Structure
 
 ```text
-job-hunt-assistant/
-├── src/
-│   ├── app.py           # Main application logic
-│   └── .env             # API Keys (Do not commit!)
-├── Dockerfile           # Docker configuration
-├── requirements.txt     # Python dependencies
-└── README.md            # Project documentation
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── src/
+    ├── app.py                 # Main Streamlit application & routing
+    ├── ingestion.py           # PDF parsing and URL scraping logic
+    ├── rag_implementation.py  # FAISS vector store and LangChain logic
+    ├── prompt_eng_recruiter.py# LLM Prompts and templates
+    ├── helper.py              # Utility functions and parsers
+    ├── job_tracker.csv        # Local database for tracked applications
+    └── .env                   # Environment variables (Git-ignored)
 
 ```
 
