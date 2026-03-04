@@ -8,7 +8,7 @@ from css_template import sidebar_footer_style
 from dotenv import load_dotenv
 from datetime import datetime
 import streamlit as st
-import os, json
+import os, json, re
 import logging
 import pandas as pd
 from rich.logging import RichHandler
@@ -162,7 +162,7 @@ def ai_job_hunt():
                 # Extracting the prompts to use
                 questions = get_prompt_ver(version="v2")
                 # Combining the Job Description as a context in base query
-                query = jd_as_context(jd_input=job_description)
+                query = jd_as_context(jd=job_description)
 
                 # Storing the RESULTS
                 results = {}
@@ -170,23 +170,39 @@ def ai_job_hunt():
                 #### Tracker integration
                 # 1.5 Extract Metadata (Company & Title)
                 progress_bar.progress(5, text="Extracting Job Metadata... (5%)")
-                q_meta_ans = qa_chain.invoke(
-                    {"query": f"{query}\n\n{questions['q_meta']}"},
-                    config=rag_run_config
-                )
-
-                # Safely parse the JSON response
                 try:
-                    # Clean the string just in case the LLM adds markdown backticks (```json)
-                    #raw_str = q_meta_ans['result'].replace('```json', '').replace('```', '').strip()
-                    raw_str = q_meta_ans['result']
-                    job_meta = json.loads(raw_str)
 
-                    results['company'] = job_meta.get('company', '')
-                    results['title'] = job_meta.get('title', '')
-                    logger.info(f"ℹ️ Extracted Metadata: {results['company']} - {results['title']}")
-                except json.JSONDecodeError as e:
-                    logger.warning(f"⚠️ Failed to parse metadata JSON. Raw output: {q_meta_ans['result']}")
+                    meta_ans = qa_chain.invoke(
+                        {"query": f"{query}\n\n{questions['q_meta']}"},
+                        config=rag_run_config
+                    )
+
+                    raw_text = meta_ans['result']
+
+                    # 1. Find the exact JSON brackets (ignores "Here is the JSON:" text)
+                    match = re.search(r'\{.*}', raw_text, re.DOTALL)
+                    clean_json_string = "None"
+                    if match:
+                        clean_json_string = match.group(0)
+
+                        # CLEANUP: Remove hidden web characters and newlines that break JSON
+                        clean_json_string = clean_json_string.replace('\xa0', ' ').replace('\n', ' ').strip()
+
+                        #  Parse with strict=False so Python ignores minor control character issues
+                        job_meta = json.loads(clean_json_string, strict=False)
+
+                        # Save to results
+                        results['company'] = job_meta.get('company', 'Unknown')
+                        results['title'] = job_meta.get('title', 'Unknown')
+                        logger.info(f"ℹ️  Extracted: {results['title']} at {results['company']}")
+                    else:
+                        logger.warning(f"⚠️ No JSON brackets found. Raw output: {raw_text}")
+                        results['company'] = ""
+                        results['title'] = ""
+
+                except Exception as e:
+                    # If it still fails, it prints exactly why so we can debug it
+                    logger.warning(f"⚠️ Failed to parse metadata. Error: {e} | Raw String: {clean_json_string}")
                     results['company'] = ""
                     results['title'] = ""
                 #####
@@ -499,6 +515,11 @@ def job_tracker():
             width='stretch',
             num_rows="dynamic",  # Allows user to delete rows
             column_config={
+                "Date Applied": st.column_config.DateColumn(
+                    "Date Applied",
+                    help="The day you submitted the application",
+                    format="DD-MM-YYYY",
+                ),
                 "Status": st.column_config.SelectboxColumn(
                     "Status",
                     help="Current stage of the application",
