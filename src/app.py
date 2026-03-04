@@ -18,7 +18,7 @@ from rich.logging import RichHandler
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    datefmt="%Y-%m-%d",
     handlers=[RichHandler(rich_tracebacks=True)]
 )
 
@@ -178,7 +178,8 @@ def ai_job_hunt():
                 # Safely parse the JSON response
                 try:
                     # Clean the string just in case the LLM adds markdown backticks (```json)
-                    raw_str = q_meta_ans['result'].replace('```json', '').replace('```', '').strip()
+                    #raw_str = q_meta_ans['result'].replace('```json', '').replace('```', '').strip()
+                    raw_str = q_meta_ans['result']
                     job_meta = json.loads(raw_str)
 
                     results['company'] = job_meta.get('company', '')
@@ -420,6 +421,34 @@ def job_tracker():
     col2.metric("Interviewing", len(df[df['Status'] == 'Interviewing']) if not df.empty else 0)
     col3.metric("Offers", len(df[df['Status'] == 'Offer']) if not df.empty else 0)
     col4.metric("Rejected", len(df[df['Status'] == 'Rejected']) if not df.empty else 0)
+
+    st.markdown("---")
+    st.subheader("📈 Application Insights")
+
+    # Only show charts if there is data in the tracker
+    if not df.empty:
+        # Create two columns for side-by-side charts
+        chart_col1, chart_col2 = st.columns(2)
+
+        with chart_col1:
+            st.markdown("**Pipeline Status**")
+            # Count how many applications are in each status
+            status_counts = df['Status'].value_counts()
+            # Streamlit natively draws a bar chart from a Pandas Series
+            st.bar_chart(status_counts)
+
+        with chart_col2:
+            st.markdown("**Application Activity Over Time**")
+            # Ensure the 'Date Applied' column is treated as actual dates
+            df['Date Applied'] = pd.to_datetime(df['Date Applied'])
+
+            # Group by the date and count the number of applications per day
+            timeline_counts = df.groupby(df['Date Applied'].dt.date).size()
+
+            # Draw a line chart to show momentum
+            st.line_chart(timeline_counts)
+    else:
+        st.info("Add some applications to see your visual insights!")
 
     st.markdown("---")
 

@@ -10,6 +10,13 @@ services:
     volumes:
       # This allows you to edit code and see changes instantly
       # without rebuilding the container every time.
+      # 1. Hot Reloading: Syncs your code so you don't have to rebuild to see changes
+      - ./src:/app/src
+      # 2. Data Persistence: Saves your job tracker data locally
+      # This ensures job_tracker.csv survives container restarts
+      - ./src/job_tracker.csv:/app/src/job_tracker.csv
+      # 3. Vector DB Cache: Saves FAISS embeddings so you don't pay OpenAI twice for the same resume
+      - ./src/vector_db:/app/src/vector_db
       - ./src:/app/src
     environment:
       - PYTHONUNBUFFERED=1

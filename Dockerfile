@@ -3,8 +3,10 @@ LABEL authors="jonathan angeles"
 WORKDIR /app
 
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Download the model during the image build process
+RUN python -m spacy download en_core_web_sm
 
 COPY src/ ./src
 
