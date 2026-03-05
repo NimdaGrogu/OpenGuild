@@ -6,6 +6,9 @@ An intelligent, dual-purpose application designed to optimize the job search pro
 Built with Python, Streamlit, LangChain, and OpenAI, and fully containerized with Docker.
 
 ---
+## Architecture 
+
+![job_hunt_arch.png](job_hunt_arch.png)
 
 ## ✨ Key Features
 
