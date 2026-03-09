@@ -424,6 +424,11 @@ def ai_job_hunt():
 
 
 def job_tracker():
+    # --- UPGRADED: Use st.toast for modern popup notifications ---
+    if 'tracker_success_msg' in st.session_state:
+        st.toast(st.session_state['tracker_success_msg'], icon="🎉")
+        del st.session_state['tracker_success_msg']
+    # -------------------------------------------------------------
     st.header("📊 Job Tracker tool")
     st.markdown("Keep track of your job applications, scores, and interview statuses.")
 
@@ -456,11 +461,8 @@ def job_tracker():
         with chart_col2:
             st.markdown("**Application Activity Over Time**")
             # Ensure the 'Date Applied' column is treated as actual dates
-            df['Date Applied'] = pd.to_datetime(df['Date Applied'])
-
-            # Group by the date and count the number of applications per day
             timeline_counts = df.groupby(df['Date Applied'].dt.date).size()
-
+            st.line_chart(timeline_counts)
             # Draw a line chart to show momentum
             st.line_chart(timeline_counts)
     else:
@@ -501,7 +503,7 @@ def job_tracker():
                     # Append and save
                     df = pd.concat([df, new_row], ignore_index=True)
                     save_tracker_data(df)
-                    st.success(f"✅ Added {new_title} at {new_company}!")
+                    st.session_state['tracker_success_msg'] = f"✅ Job Application Added: Job Title {new_title} at {new_company}!"
                     st.rerun()  # Refresh the page to show the new data
                 else:
                     st.error("⚠️ Company Name and Job Title are required.")
@@ -518,7 +520,7 @@ def job_tracker():
                 "Date Applied": st.column_config.DateColumn(
                     "Date Applied",
                     help="The day you submitted the application",
-                    format="DD-MM-YYYY",
+                    format="YY-MM-DD",
                 ),
                 "Status": st.column_config.SelectboxColumn(
                     "Status",
@@ -538,9 +540,11 @@ def job_tracker():
         )
 
         # Save changes if the user edits the table directly
-        if not edited_df.equals(df):
+        # --- FIX: Safe string comparison to prevent the invisible Double-Rerun ---
+        if not edited_df.astype(str).equals(df.astype(str)):
             save_tracker_data(edited_df)
-            st.success("✅ Tracker updated!")
+            # Use session state here too, so the toast survives the rerun!
+            st.session_state['tracker_success_msg'] = "Tracker successfully updated!"
             st.rerun()
     else:
         st.info("No applications tracked yet. Use the form above to add your first one!")
