@@ -24,7 +24,6 @@ Pending wrapper Function to validate and sanitize the input
 
 def get_jd_with_playwright(url: str) -> Optional[str]:
     """
-    Function that dynamically relies on heuristic HTML parsing and semantic filtering rather than exact CSS paths.
     Uses a headless browser to load JS-heavy job boards.
     """
     # Setup logging
@@ -49,7 +48,7 @@ def get_jd_with_playwright(url: str) -> Optional[str]:
             try:
                 logger.info(f"🚀 Loading dynamic page: {url}")
                 # 'networkidle' is safer here because we don't know the specific selector to wait for
-                await page.goto(url, wait_until="networkidle", timeout=15000)
+                await page.goto(url, wait_until="networkidle", timeout=25000)
 
                 logger.info("🧹 Injecting JavaScript to strip boilerplate DOM elements...")
 
@@ -65,20 +64,29 @@ def get_jd_with_playwright(url: str) -> Optional[str]:
                 }""")
 
                 # 2. Try to find semantic 'main' content areas first
-                semantic_selectors = ['main', '[role="main"]', '#content', '#main-content']
+                semantic_selectors = ['main', '[role="main"]', '#content', '#main-content','text=Job Description']
 
                 for selector in semantic_selectors:
                     locator = page.locator(selector).first
+                    count = await locator.count()
+                    logger.info(f"🎯 Checking selector count '{selector}': {count}")
+
                     if await locator.count() > 0:
                         text = await locator.inner_text()
                         # A typical JD is at least 500 characters. If it's too short, it might be a false positive.
-                        if len(text.strip()) > 200:
+                        trimmed_text = text.strip()
+                        if len(trimmed_text) > 400:
                             logger.info(f"🎯 Successfully found content inside semantic tag: {selector}")
                             return clean_text_output(text)
+                        else:
+                            # Too short. Log the beginning of text for debugging if needed.
+                            snippet = trimmed_text[:100].replace('\n', ' ')
+                            logger.warning(
+                                f"⚠️ Content found via '{selector}' too short ({len(trimmed_text)} chars). Snippet: '{snippet}...'")
 
                 # 3. The Ultimate Fallback: Grab the whole body
                 # since the header/footer/nav, was deleted the body should mostly just be the JD.
-                logger.warning("⚠️ Semantic tags failed. Falling back to cleaned <body> extraction.")
+                logger.warning("⚠️ Semantic tags failed. Falling back to cleaned <body> extraction. (potential noise).")
                 text = await page.locator('body').inner_text()
                 return clean_text_output(text)
 
