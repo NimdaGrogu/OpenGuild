@@ -87,11 +87,13 @@ v2 = {
     """,
 
     # q9: "Elevator Pitch" is a better term than "Speech".
-    "q9": """
-    Consider the Job requirements and Candidate resume Using the STAR Method (Situation, Task, Action, Result), 
-    draft a 2-minute "Elevator Pitch" for the candidate to use at the start of an interview.
-    
-    - The pitch should answer "Tell me about yourself" by weaving the resume experience and matched skills into a narrative that proves the
+    "q9": """     
+     Consider the Job Description and use the experience and skills describe in the Candidate Resume.
+     
+    1- Help me structure a 2-minute "Elevator Pitch" story, using the STAR Method (Situation, Task, Action, Result) 
+     to use during the interview.
+          
+    2- The pitch should answer "Tell me about yourself" by weaving the resume experience and matched skills into a narrative that proves the
       candidate is the perfect fit for THIS job description.
     """,
     ## this prompt is going to ask the LLM to extract the Job Title and Company for the tracker

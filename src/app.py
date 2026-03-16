@@ -435,42 +435,7 @@ def job_tracker():
     # 1. Load the data
     df = load_tracker_data()
 
-    # 2. Dashboard Metrics
-    st.subheader("📈 Quick Stats")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Applied", len(df))
-    col2.metric("Interviewing", len(df[df['Status'] == 'Interviewing']) if not df.empty else 0)
-    col3.metric("Offers", len(df[df['Status'] == 'Offer']) if not df.empty else 0)
-    col4.metric("Rejected", len(df[df['Status'] == 'Rejected']) if not df.empty else 0)
-
-    st.markdown("---")
-    st.subheader("📈 Application Insights")
-
-    # Only show charts if there is data in the tracker
-    if not df.empty:
-        # Create two columns for side-by-side charts
-        chart_col1, chart_col2 = st.columns(2)
-
-        with chart_col1:
-            st.markdown("**Pipeline Status**")
-            # Count how many applications are in each status
-            status_counts = df['Status'].value_counts()
-            # Streamlit natively draws a bar chart from a Pandas Series
-            st.bar_chart(status_counts)
-
-        with chart_col2:
-            st.markdown("**Application Activity Over Time**")
-            # Ensure the 'Date Applied' column is treated as actual dates
-            timeline_counts = df.groupby(df['Date Applied'].dt.date).size()
-            st.line_chart(timeline_counts)
-            # Draw a line chart to show momentum
-            st.line_chart(timeline_counts)
-    else:
-        st.info("Add some applications to see your visual insights!")
-
-    st.markdown("---")
-
-    # 3. Add a New Job Form
+    # 2. Add a New Job Form
     with st.expander("➕ Add New Application", expanded=False):
         with st.form("add_job_form"):
             colA, colB = st.columns(2)
@@ -508,7 +473,7 @@ def job_tracker():
                 else:
                     st.error("⚠️ Company Name and Job Title are required.")
 
-    # 4. Interactive Data Editor
+    # 3. Interactive Data Editor
     st.subheader("📋 Your Applications")
     if not df.empty:
         # st.data_editor allows the user to double-click and edit cells directly!
@@ -548,6 +513,40 @@ def job_tracker():
             st.rerun()
     else:
         st.info("No applications tracked yet. Use the form above to add your first one!")
+
+    # 4. Dashboard Metrics
+    st.subheader("📈 Quick Stats")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Applied", len(df))
+    col2.metric("Interviewing", len(df[df['Status'] == 'Interviewing']) if not df.empty else 0)
+    col3.metric("Offers", len(df[df['Status'] == 'Offer']) if not df.empty else 0)
+    col4.metric("Rejected", len(df[df['Status'] == 'Rejected']) if not df.empty else 0)
+
+    st.markdown("---")
+    st.subheader("📈 Application Insights")
+
+    # Only show charts if there is data in the tracker
+    if not df.empty:
+        # Create two columns for side-by-side charts
+        chart_col1, chart_col2 = st.columns(2)
+
+        with chart_col1:
+            st.markdown("**Pipeline Status**")
+            # Count how many applications are in each status
+            status_counts = df['Status'].value_counts()
+            # Streamlit natively draws a bar chart from a Pandas Series
+            st.bar_chart(status_counts)
+
+        with chart_col2:
+            st.markdown("**Application Activity Over Time**")
+            # Ensure the 'Date Applied' column is treated as actual dates
+            timeline_counts = df.groupby(df['Date Applied'].dt.date).size()
+            # Draw a line chart to show momentum
+            st.line_chart(timeline_counts)
+    else:
+        st.info("Add some applications to see your visual insights!")
+
+    st.markdown("---")
 
 if __name__ == "__main__":
     main()
