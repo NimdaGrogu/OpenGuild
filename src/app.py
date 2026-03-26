@@ -1,7 +1,11 @@
 # Libraries
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
+
 from streamlit_option_menu  import option_menu
 from ingestion import get_jd_with_playwright, get_pdf_text_pdfplumber
-from prompt_eng_recruiter import get_prompt_ver, jd_as_context
+from prompt_eng_recruiter import get_prompt_ver, jd_as_context, interview_user_prompt, interview_system_prompt
 from rag_implementation import get_rag_chain
 from helper import extract_match_score, DebugCallbackHandler, load_tracker_data, save_tracker_data
 from css_template import sidebar_footer_style
@@ -29,16 +33,16 @@ load_dotenv()
 open_api_key = os.getenv("OPENAI_API_KEY")
 
 # --- Streamlit Configuration
-st.set_page_config(page_title="AI Job Hunt Assistant", page_icon="🚀", layout='wide')
+st.set_page_config(page_title="OpenGuild Job Hunt Assistant", page_icon="🚀", layout='wide')
 
 def main():
     # 1. Set up the sidebar
     with st.sidebar:
-        st.title("👔 AI Job Hunt Assistant")
+        st.title("OpenGuild")
         selected = option_menu(
             menu_title="Main Menu",
-            options=["Recruiter Assistance","Job Tracker", ], # Required
-            icons=["robot","clipboard-data"],  # Optional (Bootstrap icons)
+            options=["Recruiter Assistance","Job Tracker", "Mock Interview"], # Required
+            icons=["robot","clipboard-data","mic"],  # Optional (Bootstrap icons)
             menu_icon="cast",  # Optional
             default_index=0,  # Optional
 
@@ -48,10 +52,17 @@ def main():
         ai_job_hunt()
     elif selected == "Job Tracker":
         job_tracker()
+    elif selected == "Mock Interview":
+        mock_interview()
 
 
 # Placeholder functions for your features
 def ai_job_hunt():
+    # --- UPGRADED: Use st.toast for modern popup notifications ---
+    if 'tracker_success_msg' in st.session_state:
+        st.toast(st.session_state['tracker_success_msg'], icon="✅")
+        del st.session_state['tracker_success_msg']
+    # -------------------------------------------------------------
     # Main Streamlit
     st.title(" 🧠 Candidate Assistant tool")
     st.markdown("**Provide a job description URL and a candidate resume to get a comprehensive analysis.**")
@@ -83,6 +94,7 @@ def ai_job_hunt():
             os.environ.pop("VERBOSE_RAG_LOGS", None)
             # Force the app to rerun immediately
             st.rerun()
+
         # -------------------------
 
         # 4. Add your footer content (LAST thing in the sidebar)
@@ -296,9 +308,6 @@ def ai_job_hunt():
                 st.session_state['analysis_results'] = results
                 st.session_state['full_report'] = report
 
-                # --- SAVE TO HISTORY (Your Logic Here) ---
-                # ... (Insert your history saving code here) ...
-
                 st.success("✅ Analysis and Assessment Completed ..!")
                 logger.info(f" ✅ Analysis and Assessment Completed ..!")
 
@@ -364,7 +373,7 @@ def ai_job_hunt():
         st.divider()
         st.subheader("📥 Export Report")
 
-        # This button will now work because 'full_report' is read from session_state
+        #  'full_report' is read from session_state
         st.download_button(
             label="Download Full Analysis Report (Markdown/Text)",
             data=st.session_state['full_report'],
@@ -406,7 +415,11 @@ def ai_job_hunt():
                             "Match Score": score_val,
                             "Status": "Applied",  # Default status
                             "URL": jd_url if jd_url else jd_text,
-                            "Notes": f"AI Analysis mapped from resume: {uploaded_resume.name}"
+                            "Notes": f"AI Analysis mapped from resume: {uploaded_resume.name}",
+                            # --- NEW: Grab the full report from session state ---
+                            "Report": st.session_state.get('full_report', '')
+                            # ----------------------------------------------------
+
                         }])
                     except Exception as e:
                         st.error(f"☠️ An error occurred: {e} - Data is not loaded correctly, reset the analysis and try the assessment again.. ")
@@ -417,16 +430,18 @@ def ai_job_hunt():
                     df = pd.concat([df, new_entry], ignore_index=True)
                     save_tracker_data(df)
 
-                    st.success(f"✅ {title_input} at {company_input} saved successfully!")
+                    # Store the success message in memory
+                    st.session_state['tracker_success_msg'] = f"Successfully saved {title_input} at {company_input}!"
+
+                    # Force the app to refresh
+                    st.rerun()
                 else:
                     st.error("⚠️ Please enter both the Company Name and Job Title to save.")
-
-
 
 def job_tracker():
     # --- UPGRADED: Use st.toast for modern popup notifications ---
     if 'tracker_success_msg' in st.session_state:
-        st.toast(st.session_state['tracker_success_msg'], icon="🎉")
+        st.toast(st.session_state['tracker_success_msg'], icon="✅")
         del st.session_state['tracker_success_msg']
     # -------------------------------------------------------------
     st.header("📊 Job Tracker tool")
@@ -500,7 +515,8 @@ def job_tracker():
                     min_value=0,
                     max_value=100,
                 ),
-                "URL": st.column_config.LinkColumn("Job Link")
+                "URL": st.column_config.LinkColumn("Job Link"),
+                "Report":None
             }
         )
 
@@ -511,16 +527,50 @@ def job_tracker():
             # Use session state here too, so the toast survives the rerun!
             st.session_state['tracker_success_msg'] = "Tracker successfully updated!"
             st.rerun()
-    else:
-        st.info("No applications tracked yet. Use the form above to add your first one!")
+
+        # --- NEW: THE REPORT VIEWER UI ---
+        st.divider()
+        st.subheader("📄 View Saved Job Assessments")
+
+        # Filter for rows that actually have a report saved
+        # Fill NaN values with empty string to avoid errors during filtering
+        df['Report'] = df['Report'].fillna("")
+        jobs_with_reports = df[df['Report'] != ""]
+
+        if not jobs_with_reports.empty:
+            # Create a list of labels for the dropdown (e.g., "Google - Software Engineer")
+            dropdown_options = jobs_with_reports.apply(
+                lambda x: f"{x['Company']} - {x['Job Title']}", axis=1
+            ).tolist()
+
+            # Dropdown selector
+            selected_job_label = st.selectbox("Select an application to read its AI Analysis:",
+                                              ["-- Select an Application --"] + dropdown_options)
+
+            if selected_job_label != "-- Select an Application --":
+                # Find the index of the selected job to grab the correct report
+                selected_idx = dropdown_options.index(selected_job_label)
+                actual_report_text = jobs_with_reports.iloc[selected_idx]['Report']
+
+                # Display it inside a scrollable container so it doesn't take up the whole screen
+                with st.container(height=600, border=True):
+                    st.markdown(actual_report_text)
+        else:
+            st.info("No AI reports saved yet. Analyze a job and click 'Save to Tracker' to see them here.")
+        # ---------------------------------
+
+
 
     # 4. Dashboard Metrics
+    st.divider()
     st.subheader("📈 Quick Stats")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Total Applied", len(df))
     col2.metric("Interviewing", len(df[df['Status'] == 'Interviewing']) if not df.empty else 0)
     col3.metric("Offers", len(df[df['Status'] == 'Offer']) if not df.empty else 0)
     col4.metric("Rejected", len(df[df['Status'] == 'Rejected']) if not df.empty else 0)
+    col5.metric("Ghosted", len(df[df['Status'] == 'Ghosted']) if not df.empty else 0)
+    col6.metric("Screening", len(df[df['Status'] == 'Screening']) if not df.empty else 0)
 
     st.markdown("---")
     st.subheader("📈 Application Insights")
@@ -547,6 +597,12 @@ def job_tracker():
         st.info("Add some applications to see your visual insights!")
 
     st.markdown("---")
+
+def mock_interview():
+    st.header("🎤 AI Mock Interview")
+    st.markdown("Practice your interview skills with an AI Hiring Manager tailored to your target job.")
+
+
 
 if __name__ == "__main__":
     main()

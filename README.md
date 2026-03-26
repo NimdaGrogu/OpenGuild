@@ -1,9 +1,7 @@
 
-# 👔 AI Job Hunt Assistant
-
+![openguild.png](openguild.png)   
 An intelligent, dual-purpose application designed to optimize the job search process. It combines a **RAG-powered Resume Analyzer** to evaluate candidate fit against job descriptions with an integrated **Job Application Tracker** to manage the hiring pipeline.
-
-Built with Python, Streamlit, LangChain, and OpenAI, and fully containerized with Docker.
+Built with Python, Streamlit, LangChain,FAISS and OpenAI, and fully containerized with Docker.
 
 ---
 ## Architecture 
@@ -17,7 +15,10 @@ Built with Python, Streamlit, LangChain, and OpenAI, and fully containerized wit
 * **Smart PDF Parsing:** Implements layout-aware document chunking using PyMuPDF to accurately read complex, multi-column resumes without losing context.
 * **Comprehensive SWOT Analysis:** Automatically generates Strengths, Weaknesses, Opportunities, and Threats for the candidate relative to the specific role.
 * **Automated Application Kit:** Drafts a tailored cover letter and a STAR-method elevator pitch to prepare for interviews.
+* **Elevate Speech:** Tools that helps you keep a structure answer during the interview, using frameworks like "STAR" (Situation, Task, Action, Result)
+* and "HERO" (Headline, Effect, Rationale, Operation) tailored with your own professional skills
 * **Exportable Reports:** Download the full analysis as a formatted Markdown file.
+* **Session History:** Automatically saves analyzed candidates to a sidebar history, allowing recruiters to switch between profiles without re-running the analysis.
 
 ### 📊 2. Job Application Tracker
 * **Seamless Integration:** One-click save from the Analyzer directly to your Tracker, auto-extracting the Company Name and Job Title using structured LLM outputs.
@@ -151,10 +152,10 @@ docker compose up
 ## 🤝 Contributing
 Next Features:
 
-* **Session History:** Automatically saves analyzed candidates to a sidebar history, allowing recruiters to switch between profiles without re-running the analysis.
 * **LLM as Judge:** Integrate Gemini LLM to perform guardrails ensuring fair evaluation of the candidate 
 regardless of skin color, ethnicity, socio-economic position, and religion.
-
+* **Mock Interview**: AI Speech-to-Text, Virtual Mock Interview that allow you to train your brain for your upcoming interview tailored 
+* for you and the job position and company.
 **Pull requests are welcome**. For major changes, please open an issue first to discuss what you would like to change.
 
 **Thanks..**

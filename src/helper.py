@@ -58,16 +58,21 @@ def load_tracker_data_():
     TRACKER_FILE = "job_tracker.csv"
 
     if os.path.exists(TRACKER_FILE):
-        return pd.read_csv(TRACKER_FILE, parse_dates=["Date Applied"])
+        df = pd.read_csv(TRACKER_FILE, parse_dates=["Date Applied"])
+        if "Report" not in df.columns:
+            df["Report"] = ""
+        return df
     else:
         # Define the columns for a new tracker
         # Define default columns with correct types
+        # --- NEW: Ensure older CSVs get the new column without crashing ---
+        # --- NEW: Add "Report" to the default columns ---
         df = pd.DataFrame(columns=[
-            "Date Applied", "Company", "Job Title", "Match Score", "Status", "URL", "Notes"
+            "Date Applied", "Company", "Job Title", "Match Score", "Status", "URL", "Notes", "Report"
         ])
         # Force empty column type to datetime so editor doesn't complain on first load
         df["Date Applied"] = pd.to_datetime(df["Date Applied"])
-        return df
+    return df
 
 def save_tracker_data(df):
     TRACKER_FILE = "job_tracker.csv"

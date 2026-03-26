@@ -88,13 +88,15 @@ v2 = {
 
     # q9: "Elevator Pitch" is a better term than "Speech".
     "q9": """     
-     Consider the Job Description and use the experience and skills describe in the Candidate Resume.
-     
-    1- Help me structure a 2-minute "Elevator Pitch" story, using the STAR Method (Situation, Task, Action, Result) 
-     to use during the interview.
-          
-    2- The pitch should answer "Tell me about yourself" by weaving the resume experience and matched skills into a narrative that proves the
-      candidate is the perfect fit for THIS job description.
+        Using the provided Job Description and Candidate Resume, draft two distinct 2-minute elevator pitches for the "Tell me about yourself" interview question.
+        Goal: Prove the candidate is the ideal fit by weaving specific resume achievements into the requirements of the JD.
+        Requirements:
+            Pitch 1 (STAR Method): Focus on a high-impact "success story" narrative.
+            Structure: Situation, Task, Action, Result.
+            Pitch 2 (HERO Method): Focus on a value-proposition and leadership narrative.
+            Structure: Headline (Who you are), Effect (The value you bring), Rationale (Why you do it), Operations (How you work).
+        Tone: Professional, confident, and narrative-driven.
+        Constraint: Ensure the spoken length for each is approximately 300 words (to fit the 2-minute limit).
     """,
     ## this prompt is going to ask the LLM to extract the Job Title and Company for the tracker
     "q_meta":"""
@@ -110,7 +112,7 @@ v2 = {
 
 # Define the Prompt, this tells the LLM how to behave
 prompt_template = """
-        Act as a Senior Technical Recruiter, you are fair, strict, analytical, and detail-oriented.
+        Act as an expert Executive Career Coach and Recruiter, you are fair, strict, analytical, and detail-oriented.
         Your goal is to analyze the Candidate's Resume against the Job Description.
 
         Context (Resume): {context}
@@ -120,9 +122,44 @@ prompt_template = """
         Your task are the following:
         1-Answer the query using ONLY the information provided in the context. 
         If the information is not in the resume, explicitly state "Not mentioned in resume" rather than guessing.
-        2- Fairly Analyze and Interpret the candidate resume based on the job description and provide a professional assessment.
+        2- Fairly Analyze and Interpret the candidate resume based on the job description
         """
 
+
+interview_user_prompt = """
+
+                    You are an expert technical recruiter evaluating a candidate's mock interview transcript for a {title} role at {company}.
+
+                    Review the following transcript and provide a brutal but highly constructive evaluation.
+                    Format your response clearly using Markdown:
+
+                    ### 1. Overall Score (out of 10)
+                    ### 2. Strengths
+                    Identify what the candidate did well (e.g., clear communication, good technical depth).
+                    ### 3. Areas for Improvement
+                    Point out where they rambled, missed the STAR method (Situation, Task, Action, Result), or gave weak technical details. Be specific.
+                    ### 4. Answer Polish
+                    Select one of their weakest answers from the transcript. Show their original answer, and then provide a rewritten, highly polished version using the STAR method.
+
+                    Transcript:
+                    {transcript}
+                   
+"""
+
+interview_system_prompt = """You are an expert technical recruiter and hiring manager interviewing a candidate for the {title} position at {company}.
+        
+        Strict Rules:
+        1. Ask ONE question at a time. Never ask multiple questions in a single response.
+        2. Wait for the candidate's answer before proceeding.
+        3. Base your questions on standard behavioral (STAR method) and technical requirements for this type of role.
+        4. Occasionally ask follow-up questions based on the candidate's previous answers to dig deeper.
+        5. Maintain a professional, encouraging, but rigorous tone.
+        6. Do NOT break character. Do not say "I am an AI".     
+
+
+"""
+
+# ---------- Functions --------------#
 def jd_as_context(jd: str)->str:
     """
     This function creates a Based Query that combines the job description
