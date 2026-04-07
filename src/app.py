@@ -1,18 +1,31 @@
 # Libraries
-from streamlit_option_menu  import option_menu
-from ingestion import get_jd_with_playwright, get_pdf_text_pdfplumber
-from prompt_eng_recruiter import get_prompt_ver, jd_as_context
-from rag_implementation import get_rag_chain
-from helper import extract_match_score, DebugCallbackHandler, load_tracker_data, save_tracker_data
-from css_template import sidebar_footer_style
-from dotenv import load_dotenv
-from datetime import datetime
-import streamlit as st
-import os, json, re
+import io
+import json
 import logging
-import pandas as pd
+import os
+import re
+import streamlit as st
 from rich.logging import RichHandler
+from css_template import sidebar_footer_style
+from ingestion import get_pdf_text_pdfplumber
 
+# --- MAC OS FIX FOR FAISS/OPENMP CLASH ---
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# -----------------------------------------
+import pandas as pd
+from datetime import datetime
+from streamlit_option_menu import option_menu
+from dotenv import load_dotenv
+
+# App imports
+from ingestion import get_jd_with_playwright
+from prompt_eng import get_prompt_ver, jd_as_context
+from rag_implementation import get_rag_chain
+from helper import load_tracker_data, save_tracker_data, extract_match_score, DebugCallbackHandler, MockInterviewEngine
+# Imports for the Mock interview
+from langchain_core.messages import HumanMessage, AIMessage
+
+load_dotenv()
 
 # Configure basic Logging config with RichHandler
 logging.basicConfig(
@@ -29,29 +42,35 @@ load_dotenv()
 open_api_key = os.getenv("OPENAI_API_KEY")
 
 # --- Streamlit Configuration
-st.set_page_config(page_title="AI Job Hunt Assistant", page_icon="🚀", layout='wide')
+st.set_page_config(page_title="OpenGuild Job Hunt Assistant", page_icon="🚀", layout='wide')
 
 def main():
     # 1. Set up the sidebar
     with st.sidebar:
-        st.title("👔 AI Job Hunt Assistant")
+        st.title("OpenGuild")
         selected = option_menu(
             menu_title="Main Menu",
-            options=["Recruiter Assistance","Job Tracker", ], # Required
-            icons=["robot","clipboard-data"],  # Optional (Bootstrap icons)
+            options=["Candidate Coach","Job Tracker", "Mock Interview"], # Required
+            icons=["robot","clipboard-data","mic"],  # Optional (Bootstrap icons)
             menu_icon="cast",  # Optional
             default_index=0,  # Optional
 
         )
     # 2. Logic to Switch Between "Pages"
-    if selected == "Recruiter Assistance":
+    if selected == "Candidate Coach":
         ai_job_hunt()
     elif selected == "Job Tracker":
         job_tracker()
-
+    elif selected == "Mock Interview":
+        mock_interview_tool()
 
 # Placeholder functions for your features
 def ai_job_hunt():
+    # --- UPGRADED: Use st.toast for modern popup notifications ---
+    if 'tracker_success_msg' in st.session_state:
+        st.toast(st.session_state['tracker_success_msg'], icon="✅")
+        del st.session_state['tracker_success_msg']
+    # -------------------------------------------------------------
     # Main Streamlit
     st.title(" 🧠 Candidate Assistant tool")
     st.markdown("**Provide a job description URL and a candidate resume to get a comprehensive analysis.**")
@@ -83,6 +102,7 @@ def ai_job_hunt():
             os.environ.pop("VERBOSE_RAG_LOGS", None)
             # Force the app to rerun immediately
             st.rerun()
+
         # -------------------------
 
         # 4. Add your footer content (LAST thing in the sidebar)
@@ -296,9 +316,6 @@ def ai_job_hunt():
                 st.session_state['analysis_results'] = results
                 st.session_state['full_report'] = report
 
-                # --- SAVE TO HISTORY (Your Logic Here) ---
-                # ... (Insert your history saving code here) ...
-
                 st.success("✅ Analysis and Assessment Completed ..!")
                 logger.info(f" ✅ Analysis and Assessment Completed ..!")
 
@@ -364,7 +381,7 @@ def ai_job_hunt():
         st.divider()
         st.subheader("📥 Export Report")
 
-        # This button will now work because 'full_report' is read from session_state
+        #  'full_report' is read from session_state
         st.download_button(
             label="Download Full Analysis Report (Markdown/Text)",
             data=st.session_state['full_report'],
@@ -406,7 +423,11 @@ def ai_job_hunt():
                             "Match Score": score_val,
                             "Status": "Applied",  # Default status
                             "URL": jd_url if jd_url else jd_text,
-                            "Notes": f"AI Analysis mapped from resume: {uploaded_resume.name}"
+                            "Notes": f"AI Analysis mapped from resume: {uploaded_resume.name}",
+                            # --- NEW: Grab the full report from session state ---
+                            "Report": st.session_state.get('full_report', '')
+                            # ----------------------------------------------------
+
                         }])
                     except Exception as e:
                         st.error(f"☠️ An error occurred: {e} - Data is not loaded correctly, reset the analysis and try the assessment again.. ")
@@ -417,16 +438,18 @@ def ai_job_hunt():
                     df = pd.concat([df, new_entry], ignore_index=True)
                     save_tracker_data(df)
 
-                    st.success(f"✅ {title_input} at {company_input} saved successfully!")
+                    # Store the success message in memory
+                    st.session_state['tracker_success_msg'] = f"Successfully saved {title_input} at {company_input}!"
+
+                    # Force the app to refresh
+                    st.rerun()
                 else:
                     st.error("⚠️ Please enter both the Company Name and Job Title to save.")
-
-
 
 def job_tracker():
     # --- UPGRADED: Use st.toast for modern popup notifications ---
     if 'tracker_success_msg' in st.session_state:
-        st.toast(st.session_state['tracker_success_msg'], icon="🎉")
+        st.toast(st.session_state['tracker_success_msg'], icon="✅")
         del st.session_state['tracker_success_msg']
     # -------------------------------------------------------------
     st.header("📊 Job Tracker tool")
@@ -500,27 +523,62 @@ def job_tracker():
                     min_value=0,
                     max_value=100,
                 ),
-                "URL": st.column_config.LinkColumn("Job Link")
+                "URL": st.column_config.LinkColumn("Job Link"),
+                "Report":None
             }
         )
 
         # Save changes if the user edits the table directly
-        # --- FIX: Safe string comparison to prevent the invisible Double-Rerun ---
+        # ---  Safe string comparison to prevent the invisible Double-Rerun ---
         if not edited_df.astype(str).equals(df.astype(str)):
             save_tracker_data(edited_df)
             # Use session state here too, so the toast survives the rerun!
             st.session_state['tracker_success_msg'] = "Tracker successfully updated!"
             st.rerun()
-    else:
-        st.info("No applications tracked yet. Use the form above to add your first one!")
+
+        # --- THE REPORT VIEWER UI ---
+        st.divider()
+        st.subheader("📄 View Saved Job Assessments")
+
+        # Filter for rows that actually have a report saved
+        # Fill NaN values with empty string to avoid errors during filtering
+        df['Report'] = df['Report'].fillna("")
+        jobs_with_reports = df[df['Report'] != ""]
+
+        if not jobs_with_reports.empty:
+            # Create a list of labels for the dropdown (e.g., "Google - Software Engineer")
+            dropdown_options = jobs_with_reports.apply(
+                lambda x: f"{x['Company']} - {x['Job Title']}", axis=1
+            ).tolist()
+
+            # Dropdown selector
+            selected_job_label = st.selectbox("Select an application to read its AI Analysis:",
+                                              ["-- Select an Application --"] + dropdown_options)
+
+            if selected_job_label != "-- Select an Application --":
+                # Find the index of the selected job to grab the correct report
+                selected_idx = dropdown_options.index(selected_job_label)
+                actual_report_text = jobs_with_reports.iloc[selected_idx]['Report']
+
+                # Display it inside a scrollable container so it doesn't take up the whole screen
+                with st.container(height=600, border=True):
+                    st.markdown(actual_report_text)
+        else:
+            st.info("No AI reports saved yet. Analyze a job and click 'Save to Tracker' to see them here.")
+        # ---------------------------------
+
+
 
     # 4. Dashboard Metrics
+    st.divider()
     st.subheader("📈 Quick Stats")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Total Applied", len(df))
     col2.metric("Interviewing", len(df[df['Status'] == 'Interviewing']) if not df.empty else 0)
     col3.metric("Offers", len(df[df['Status'] == 'Offer']) if not df.empty else 0)
     col4.metric("Rejected", len(df[df['Status'] == 'Rejected']) if not df.empty else 0)
+    col5.metric("Ghosted", len(df[df['Status'] == 'Ghosted']) if not df.empty else 0)
+    col6.metric("Screening", len(df[df['Status'] == 'Screening']) if not df.empty else 0)
 
     st.markdown("---")
     st.subheader("📈 Application Insights")
@@ -547,6 +605,233 @@ def job_tracker():
         st.info("Add some applications to see your visual insights!")
 
     st.markdown("---")
+
+
+def mock_interview_tool():
+    # ---------------------------------------------------------
+    # CSS INJECTION: Beautiful glowing buttons
+    # ---------------------------------------------------------
+    st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            border-radius: 20px;
+            border: 1px solid #4B4B4B;
+            transition: all 0.3s ease-in-out;
+            font-weight: 600;
+        }
+        div.stButton > button:first-child:hover {
+            border: 1px solid #FF4B4B;
+            box-shadow: 0px 0px 10px rgba(255, 75, 75, 0.4);
+            transform: translateY(-2px);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.header("🎤 AI Mock Interview")
+    st.markdown("Practice your interview skills with an **AI Hiring Coach** tailored for you and the target job.")
+
+    # MockInterview Engine (Assumes initialized elsewhere)
+    interview_eng = MockInterviewEngine()
+
+    if 'mockinterview_success_msg' in st.session_state:
+        st.toast(st.session_state['mockinterview_success_msg'], icon="✅")
+        del st.session_state['mockinterview_success_msg']
+
+    # 1. Load data from the Job Tracker
+    df = load_tracker_data()
+
+    if df.empty:
+        st.toast("Your Job Tracker is empty. Please analyze a job and save it to the tracker first.", icon="⚠️")
+        return
+
+    # 2. Job Selection UI
+    st.subheader("1. Select a Saved Application")
+    df['Job_Label'] = df['Company'] + " - " + df['Job Title']
+    job_options = ["-- Select an Application --"] + df['Job_Label'].tolist()
+
+    selected_job_label = st.selectbox("Choose a role to interview for:", job_options, key="job_selector")
+
+    if selected_job_label == "-- Select an Application --":
+        st.toast("Please select a job from the dropdown above to begin.", icon="⚠️")
+        return
+
+    selected_idx = job_options.index(selected_job_label) - 1
+    selected_row = df.iloc[selected_idx]
+    company = selected_row['Company']
+    title = selected_row['Job Title']
+    candidate_report = "No prior evaluation available for this candidate." if pd.isna(selected_row.get('Report')) else \
+    selected_row['Report']
+
+    st.caption(f"**Current Context:** Interviewing for {title} at {company}")
+    st.divider()
+
+    #######################
+    # STATE INITIALIZATION (The New Engine)
+    #######################
+    # phase can be: 'setup', 'ai_thinking', 'user_turn', 'evaluation'
+    if 'phase' not in st.session_state:
+        st.session_state['phase'] = 'setup'
+
+    # turn_count generates a fresh audio widget every turn to prevent crash bugs
+    if 'turn_count' not in st.session_state:
+        st.session_state['turn_count'] = 0
+
+    # Stores the text that needs to be sent to the AI
+    if 'pending_input' not in st.session_state:
+        st.session_state['pending_input'] = ""
+
+    if 'interview_messages' not in st.session_state:
+        st.session_state['interview_messages'] = []
+
+    #######################
+    # INTERVIEW CONTROLS (Sidebar)
+    #######################
+    with st.sidebar:
+        st.markdown("---")
+        st.header("⚙️ Interview Controls:")
+
+        start_btn = st.button("🟢 Start Interview", type="primary", use_container_width=True)
+        end_btn = st.button("🛑 End Interview", type="secondary", use_container_width=True)
+
+        if st.button("🔄 Start Fresh", type="secondary", use_container_width=True):
+            keys_to_delete = ['interview_messages', 'current_interview_job', 'phase', 'turn_count', 'pending_input',
+                              'autoplay_next', 'job_selector']
+            for key in keys_to_delete:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+
+    #######################
+    # DYNAMIC JOB SWITCH RESET
+    #######################
+    if st.session_state.get('current_interview_job') != selected_job_label:
+        st.session_state['current_interview_job'] = selected_job_label
+        st.session_state['phase'] = 'setup'
+        st.session_state['turn_count'] = 0
+        st.session_state['pending_input'] = ""
+        st.session_state['interview_messages'] = []
+
+        greeting_text = (
+            f"Hi there! I'm OpenGuild, your Coach Assistant. I'll be acting as the hiring manager for the {title} "
+            f"position at {company} today.\r\n\r\n"
+            f"To kick things off, press the Start Interview button in the sidebar."
+        )
+
+        with st.spinner("🛠️ Setting everything up ..."):
+            greeting_audio = interview_eng.generate_tts(greeting_text)
+            st.audio(greeting_audio, format="audio/mp3", width=300, autoplay=True if greeting_audio else False)
+            st.write(f"🤖  {greeting_text}")
+
+    #######################
+    # EVALUATION MODE
+    #######################
+    if end_btn or st.session_state['phase'] == 'evaluation':
+        st.session_state['phase'] = 'evaluation'
+        st.subheader("📊 Interview Performance Report")
+        st.info("The interview has ended. Your evaluation logic goes here.")
+        st.stop()
+
+    ##########################################################
+    # 🧠 THE STATE MACHINE (Strict Isolated Phases)          #
+    ##########################################################
+
+    # 1. TRIGGER START
+    if start_btn and st.session_state['phase'] == 'setup':
+        st.session_state['phase'] = 'ai_thinking'
+        st.session_state['pending_input'] = "Hello! I am ready to begin. Please ask the first interview question."
+        st.session_state['turn_count'] = 1
+        st.rerun()
+
+    # 2. ALWAYS RENDER CHAT HISTORY (Unless in setup)
+    if st.session_state['phase'] != 'setup':
+        for idx, msg in enumerate(st.session_state['interview_messages']):
+            role = "assistant" if isinstance(msg, AIMessage) else "user"
+
+            # Hide system commands
+            is_hidden_command = role == "user" and (
+                        "I am ready to begin" in msg.content or "skip this question" in msg.content)
+            if is_hidden_command:
+                continue
+
+            avatar = "🤖" if role == "assistant" else "👤"
+
+            with st.chat_message(role, avatar=avatar):
+                st.write(msg.content)
+
+                if isinstance(msg, AIMessage) and "tts_audio" in msg.additional_kwargs:
+                    is_last = (idx == len(st.session_state['interview_messages']) - 1)
+                    should_autoplay = is_last and st.session_state.get('autoplay_next', False)
+                    audio_bytes = msg.additional_kwargs["tts_audio"]
+                    st.audio(io.BytesIO(audio_bytes), format="audio/mp3", autoplay=should_autoplay, width=300)
+                    if should_autoplay:
+                        st.session_state['autoplay_next'] = False
+
+        st.markdown("---")
+
+    # 3. PHASE: AI IS THINKING
+    if st.session_state['phase'] == 'ai_thinking':
+        # Safely append user input exactly once
+        user_input = st.session_state['pending_input']
+        if user_input:
+            st.session_state['interview_messages'].append(HumanMessage(content=user_input))
+
+        # Generate response exactly once
+        with st.chat_message("assistant", avatar="🤖"):
+            with st.spinner("🤔 The interviewer is processing..."):
+                response = interview_eng.chat_interview(
+                    title=title,
+                    company=company,
+                    candidate_report=candidate_report,
+                    history=st.session_state['interview_messages'][:-1],
+                    user_input=user_input
+                )
+
+            with st.spinner("🔊 Generating response..."):
+                audio_content = interview_eng.generate_tts(response)
+
+        # Store response
+        st.session_state['interview_messages'].append(
+            AIMessage(
+                content=response,
+                additional_kwargs={"tts_audio": audio_content} if audio_content else {}
+            )
+        )
+        st.session_state['autoplay_next'] = True
+
+        # Phase Complete! Switch to user's turn and wipe the pending input
+        st.session_state['pending_input'] = ""
+        st.session_state['phase'] = 'user_turn'
+        st.rerun()
+
+    # 4. PHASE: USER'S TURN (Microphone Mode)
+    elif st.session_state['phase'] == 'user_turn':
+        col_mic, col_skip = st.columns([3, 1], vertical_alignment="bottom")
+
+        with col_mic:
+            # THE MAGIC FIX: The widget key uses 'turn_count'. It is a completely new widget every turn.
+            recorded_audio = st.audio_input("🎙️ Record your answer", key=f"mic_input_{st.session_state['turn_count']}")
+
+        with col_skip:
+            skip_btn = st.button("⏭️ Skip Question", key=f"skip_btn_{st.session_state['turn_count']}",
+                                 use_container_width=True)
+
+        # Process the input if they clicked/spoke
+        if recorded_audio:
+            audio_bytes = recorded_audio.getvalue()
+            with st.spinner("🎤 Processing your audio..."):
+                transcribed_text = interview_eng.transcribe_audio(audio_bytes)
+                if transcribed_text:
+                    st.session_state['pending_input'] = transcribed_text
+                    st.session_state['turn_count'] += 1
+                    st.session_state['phase'] = 'ai_thinking'
+                    st.rerun()
+
+        elif skip_btn:
+            st.session_state['pending_input'] = "I'm stuck on this one. Let's skip it and move to the next question."
+            st.session_state['turn_count'] += 1
+            st.session_state['phase'] = 'ai_thinking'
+            st.rerun()
+
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_classic.chains.retrieval_qa.base import RetrievalQA
-from prompt_eng_recruiter import prompt_template
+from prompt_eng import prompt_template_recruiter
 # Embeddings & Chat Model
 # (Now live in the dedicated langchain_openai package)
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -103,7 +103,7 @@ def get_rag_chain(resume_text, resume_file_name):
 
 
     prompt = PromptTemplate(
-        template=prompt_template, input_variables=["context", "question"]
+        template=prompt_template_recruiter, input_variables=["context", "question"]
     )
 
     # 5. Create the Chain
