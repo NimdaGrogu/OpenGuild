@@ -6,6 +6,7 @@ import os
 import re
 import streamlit as st
 from rich.logging import RichHandler
+
 from css_template import sidebar_footer_style
 from ingestion import get_pdf_text_pdfplumber
 
@@ -62,7 +63,7 @@ def main():
     elif selected == "Job Tracker":
         job_tracker()
     elif selected == "Mock Interview":
-        mock_interview_tool()
+        mock_interview()
 
 # Placeholder functions for your features
 def ai_job_hunt():
@@ -607,7 +608,7 @@ def job_tracker():
     st.markdown("---")
 
 
-def mock_interview_tool():
+def mock_interview():
     # ---------------------------------------------------------
     # CSS INJECTION: Beautiful glowing buttons
     # ---------------------------------------------------------
@@ -728,11 +729,23 @@ def mock_interview_tool():
     if end_btn or st.session_state['phase'] == 'evaluation':
         st.session_state['phase'] = 'evaluation'
         st.subheader("📊 Interview Performance Report")
-        st.info("The interview has ended. Your evaluation logic goes here.")
+        st.info("The interview has ended.")
+        transcript = ""
+        for msg in st.session_state.interview_messages:
+            speaker = "Interviewer" if isinstance(msg, AIMessage) else "Candidate"
+            transcript += f"**{speaker}:** {msg.content}\n\n"
+        with st.spinner("Analyzing your responses and building feedback..."):
+            feedback = interview_eng.evaluation_report(title=title,
+                                            company=company,
+                                            transcript=transcript,
+                                            evaluation_report=candidate_report
+                                            )
+            st.markdown(feedback)
+            st.divider()
         st.stop()
 
     ##########################################################
-    # 🧠 THE STATE MACHINE (Strict Isolated Phases)          #
+    #  THE STATE MACHINE (Strict Isolated Phases)          #
     ##########################################################
 
     # 1. TRIGGER START
@@ -785,8 +798,6 @@ def mock_interview_tool():
                     history=st.session_state['interview_messages'][:-1],
                     user_input=user_input
                 )
-
-            with st.spinner("🔊 Generating response..."):
                 audio_content = interview_eng.generate_tts(response)
 
         # Store response
@@ -808,9 +819,11 @@ def mock_interview_tool():
         col_mic, col_skip = st.columns([3, 1], vertical_alignment="bottom")
 
         with col_mic:
-            # THE MAGIC FIX: The widget key uses 'turn_count'. It is a completely new widget every turn.
-            recorded_audio = st.audio_input("🎙️ Record your answer", key=f"mic_input_{st.session_state['turn_count']}")
-
+            # The widget key uses 'turn_count'. It is a completely new widget every turn.
+            recorded_audio = st.audio_input("🎙️ Record your answer",
+                                            width="stretch",
+                                            key=f"mic_input_{st.session_state['turn_count']}"
+                                            )
         with col_skip:
             skip_btn = st.button("⏭️ Skip Question", key=f"skip_btn_{st.session_state['turn_count']}",
                                  use_container_width=True)
