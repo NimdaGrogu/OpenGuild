@@ -6,7 +6,7 @@ Built with Python, Streamlit, LangChain,FAISS and OpenAI, and fully containerize
 ---
 ## Architecture 
 
-![job_hunt_arch.png](job_hunt_arch.png)
+![job_hunt_arch1.png](job_hunt_arch1.png)
 
 ## ✨ Key Features
 
