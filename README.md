@@ -32,8 +32,10 @@ Built with Python, Streamlit, LangChain,FAISS and OpenAI, and fully containerize
 * **Frontend:** Streamlit
 * **AI/LLM:** LangChain, OpenAI (`gpt-4o`, `text-embedding-3-small`)
 * **Vector Database:** FAISS (Local)
+* **Prompt Engineering:** LangChain PromptTemplate Engine
 * **Data Processing:** Pandas, PyMuPDF, pdfplumber
 * **Deployment:** Docker & Docker Compose
+* **OpenAI TTS,STT gTTS**: Voice to Tex and Text to Speech Engine
 
 ---
 
