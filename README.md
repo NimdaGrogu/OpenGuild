@@ -1,24 +1,28 @@
+# 🚀 OpenGuild: AI Job Hunt Assistant
 
 ![openguild.png](openguild.png)   
-An intelligent, dual-purpose application designed to optimize the job search process. It combines a **RAG-powered Resume Analyzer** to evaluate candidate fit against job descriptions with an integrated **Job Application Tracker** to manage the hiring pipeline.
-Built with Python, Streamlit, LangChain,FAISS and OpenAI, and fully containerized with Docker.
+
+An intelligent, dual-purpose application designed to optimize the job search process. OpenGuild combines a **RAG-powered Resume Analyzer** to evaluate candidate fit, an integrated **Job Application Tracker** to manage the hiring pipeline, and a **Voice-Driven AI Mock Interviewer** to help you prep for the big day.
+
+Built with Python, Streamlit, LangChain, FAISS, and OpenAI, and fully containerized with Docker.
 
 ---
-## Architecture 
+
+## 🏗️ Architecture 
 
 ![job_hunt_arch1.png](job_hunt_arch1.png)
+*(Note: Ensure your architecture images are uploaded to your repo to display correctly)*
+
+---
 
 ## ✨ Key Features
 
 ### 🔍 1. AI Resume Analyzer
 * **Semantic Match Scoring:** Uses vector embeddings (FAISS) to calculate a 0-100% quantitative fit score based on hard skills, experience, and industry context.
-* **Smart PDF Parsing:** Implements layout-aware document chunking using PyMuPDF to accurately read complex, multi-column resumes without losing context.
+* **Smart PDF Parsing:** Implements layout-aware document chunking using PyMuPDF and pdfplumber to accurately read complex, multi-column resumes without losing context.
 * **Comprehensive SWOT Analysis:** Automatically generates Strengths, Weaknesses, Opportunities, and Threats for the candidate relative to the specific role.
-* **Automated Application Kit:** Drafts a tailored cover letter and a STAR-method elevator pitch to prepare for interviews.
-* **Elevate Speech:** Tools that helps you keep a structure answer during the interview, using frameworks like "STAR" (Situation, Task, Action, Result)
-* and "HERO" (Headline, Effect, Rationale, Operation) tailored with your own professional skills
+* **Elevate Speech & Application Kit:** Drafts a tailored cover letter and helps you structure answers using industry frameworks like **STAR** (Situation, Task, Action, Result) and **HERO** (Headline, Effect, Rationale, Operation).
 * **Exportable Reports:** Download the full analysis as a formatted Markdown file.
-* **Session History:** Automatically saves analyzed candidates to a sidebar history, allowing recruiters to switch between profiles without re-running the analysis.
 
 ### 📊 2. Job Application Tracker
 * **Seamless Integration:** One-click save from the Analyzer directly to your Tracker, auto-extracting the Company Name and Job Title using structured LLM outputs.
@@ -26,141 +30,92 @@ Built with Python, Streamlit, LangChain,FAISS and OpenAI, and fully containerize
 * **Interactive Data Editor:** Update application statuses (e.g., "Applied" -> "Interviewing") directly within the UI.
 * **Persistent Storage:** Data is saved locally via CSV, ensuring your pipeline survives container restarts.
 
+### 🎙️ 3. Voice-Driven Mock Interview (NEW!)
+* **Practice Under Pressure:** Do a live audio interview with your AI Coach and get real-time evaluations on your delivery.
+* **Tailored to the Role:** The AI automatically adopts the persona of the hiring manager for the specific job and company you saved in your tracker.
+* **Speech-to-Text & Neural Voice:** Speak naturally into your microphone. The AI transcribes your answer, processes it, and speaks back to you in a realistic neural voice.
+* **Performance Report:** Get personalized, expert feedback highlighting where you did well and where you can improve before the real interview.
+
 ---
 
 ## 🛠️ Technology Stack
+
 * **Frontend:** Streamlit
-* **AI/LLM:** LangChain, OpenAI (`gpt-4o`, `text-embedding-3-small`)
+* **AI & Orchestration:** LangChain Core, OpenAI API (`gpt-4o`)
+* **Audio Processing:** OpenAI Whisper (STT) and TTS-1 (Text-to-Speech)
 * **Vector Database:** FAISS (Local)
-* **Prompt Engineering:** LangChain PromptTemplate Engine
 * **Data Processing:** Pandas, PyMuPDF, pdfplumber
 * **Deployment:** Docker & Docker Compose
-* **OpenAI TTS,STT gTTS**: Voice to Tex and Text to Speech Engine
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-* Docker and Docker Compose installed on your machine.
-* An OpenAI API Key.
+* Python 3.13+ (for local development)
+* Docker and Docker Compose (for containerized deployment)
+* An active [OpenAI API Key](https://platform.openai.com/)
 
-### Installation & Setup
-
-
----
-
-> **⚠️ Security Note:** Never commit your `.env` file to GitHub. It is already included in `.gitignore`.
+> **⚠️ Security Note:** Never commit your `.env` file to GitHub. It is already included in the `.gitignore`.
 
 ---
 
 ## 💻 How to Run Locally
 
-### Prerequisites
-
-* Python 3.13+
-* Pip
-
 ### 1. Clone the Repository
-
 ```bash
-git clone https://github.com/NimdaGrogu/job-hunt-assistant.git
+git clone [https://github.com/NimdaGrogu/job-hunt-assistant.git](https://github.com/NimdaGrogu/job-hunt-assistant.git)
 cd job-hunt-assistant
 touch src/job_tracker.csv
 ```
-## ⚙️ Configuration (API Key)
 
-This project requires an OpenAI API key to run.
+### 2. Configure Environment Variables
+Create a file named .env in the src/ folder (or project root) and add your keys:
 
-1. **Get your key**: Sign up at [platform.openai.com](https://platform.openai.com/).
-2. **Create the secrets file**:
-Create a file named `.env` in the `src/` folder (or project root).
-3. **Add your key**:
-Open the `.env` file and add the following line:
-```bash
+```Bash
 OPENAI_API_KEY=sk-your-actual-api-key-here
 VERBOSE_RAG_LOGS=false 
 ```
-**When VERBOSE_RAG_LOGS is enabled you will see Callback in the application logs**
-### 2. Install Dependencies
+(Note: When VERBOSE_RAG_LOGS=true, detailed LangChain callbacks will print in the terminal for debugging).
 
-```bash
+### 3. Install Dependencies
+```Bash
 pip install --upgrade pip
 pip install -r requirements.txt
-
 ```
-
-### 3. Run the App
-
-```bash
+### 4. Run the App
+```Bash
 streamlit run src/app.py
-
 ```
+The app should open automatically at http://localhost:8501
 
-*The app should open automatically at `http://localhost:8501*`
+### 🐳 How to Run with Docker
+## Option A: Standard Docker Run
+Build the Image:
 
----
-
-## 🐳 How to Run with Docker
-
-If you prefer using Docker to ensure a consistent environment:
-
-### 1. Build the Image
-
-```bash
-docker build -t job-hunt-assistant .
-
+```Bash
+docker build -t openguild .
 ```
+Run the Container (Passes your local .env file securely):
 
-### 2. Option A Run the Container
-
-You must pass your API key to the container. We use the `--env-file` flag to pass your local secrets safely.
-
-```bash
-docker run -p 8501:8501 --env-file src/.env job-hunt-assistant
-
+```Bash
+docker run -p 8501:8501 --env-file src/.env openguild
 ```
+## Option B: Docker Compose (Recommended)
 
-* **Access the app:** Open your browser to `http://localhost:8501`
-* *(Note: 0.0.0.0 in the terminal logs means it is listening inside the container; you must use localhost in your browser).*
+Assuming you are in the root directory and your .env is configured:
 
----
-### 2. Option B use Docker Compose
-**Assuming you are in the root directory**
-```bash
-docker compose up
-
+```Bash
+docker compose up -d
 ```
+Access the app by opening your browser to http://localhost:8501
 
-## 📂 Project Structure
 
-```text
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── src/
-    ├── app.py                 # Main Streamlit application & routing
-    ├── ingestion.py           # PDF parsing and URL scraping logic
-    ├── rag_implementation.py  # FAISS vector store and LangChain logic
-    ├── prompt_eng_recruiter.py# LLM Prompts and templates
-    ├── helper.py              # Utility functions and parsers
-    ├── job_tracker.csv        # Local database for tracked applications
-    └── .env                   # Environment variables (Git-ignored)
-
-```
-
-![aijobhuntool.png](aijobhuntool.png)
+## 🤝 Roadmap & Upcoming Features
+⚖️ LLM as Judge (WIP): Integrating the Gemini API to act as a secondary guardrail, ensuring fair and unbiased evaluation of candidates regardless of background, ethnicity, or socio-economic position.
 
 ## 🤝 Contributing
-Next Features:
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-* **LLM as Judge:** Integrate Gemini LLM to perform guardrails ensuring fair evaluation of the candidate 
-regardless of skin color, ethnicity, socio-economic position, and religion.
-* **Mock Interview**: AI Speech-to-Text, Virtual Mock Interview that allow you to train your brain for your upcoming interview tailored 
-* for you and the job position and company.
-**Pull requests are welcome**. For major changes, please open an issue first to discuss what you would like to change.
-
-**Thanks..**
-## 📄 License
-
-[MIT](https://choosealicense.com/licenses/mit/)
+# 📄 License
+MIT
