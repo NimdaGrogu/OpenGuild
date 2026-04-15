@@ -1,4 +1,5 @@
 from langchain_community.document_loaders import WebBaseLoader
+from typing import Optional
 from playwright.async_api import async_playwright
 from typing import Optional
 from rich.logging import RichHandler
@@ -123,7 +124,7 @@ def get_jd_from_url(url) -> Optional[str]:
         return None
 
 # Function 2: Extract Text from Uploaded PDF
-def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[tuple]:
+def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[str]:
     import pypdf
     try:
         # Read the PDF file directly from the stream
@@ -140,7 +141,7 @@ def get_pdf_text_pypdf(uploaded_file, verbose=False) -> Optional[tuple]:
         return None
 
 
-def get_pdf_text_pdfplumber(uploaded_file, verbose=False)-> Optional[tuple]:
+def get_pdf_text_pdfplumber(uploaded_file, verbose=False)-> Optional[str]:
     import pdfplumber
     try:
         #logger.info(f"ℹ️  Reading PDF: {uploaded_file.name}")
@@ -156,7 +157,7 @@ def get_pdf_text_pdfplumber(uploaded_file, verbose=False)-> Optional[tuple]:
 
 
 
-def get_pdf_text_pymupdf(uploaded_file, split_ratio=0.35, verbose=False)-> str | None:
+def get_pdf_text_pymupdf(uploaded_file, split_ratio=0.35, verbose=False)-> Optional[str]:
     import fitz
     logger.info(f"ℹ️  Reading PDF: {uploaded_file.name}")
     try:

@@ -12,8 +12,7 @@ from langchain_classic.embeddings import CacheBackedEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Prompts
-# (ChatPromptTemplate is preferred over PromptTemplate for Chat Models)
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.prompts import PromptTemplate
 # 5. Chains
 #from langchain_classic.chains import create_retrieval_chain
 #from langchain_classic.chains.combine_documents import create_stuff_documents_chain
