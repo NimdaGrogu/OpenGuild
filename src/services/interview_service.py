@@ -13,6 +13,8 @@ from prompts.prompts import interview_eval_prompt, interview_system_prompt
 
 logger = logging.getLogger("interview_service")
 
+from dotenv import load_dotenv
+load_dotenv()
 
 class MockInterviewEngine:
     def __init__(self) -> None:

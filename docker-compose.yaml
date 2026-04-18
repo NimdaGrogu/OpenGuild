@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: job-hunt-assistant
+    container_name: OpenGuild
     ports:
       - "8501:8501"
     # Automatically load API keys
