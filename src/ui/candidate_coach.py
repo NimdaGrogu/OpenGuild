@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
-import re
 from datetime import datetime
 
 import pandas as pd
@@ -11,8 +9,7 @@ import streamlit as st
 
 from data.tracker_repository import load_tracker_data, save_tracker_data
 from services.analysis_service import run_candidate_analysis
-from utils.parsing import extract_match_score
-from css_template import sidebar_footer_style
+from utils.css_template import sidebar_footer_style
 
 logger = logging.getLogger("candidate_coach")
 
@@ -73,7 +70,7 @@ def render_candidate_coach() -> None:
             st.stop()
 
         if jd_url:
-            from ingestion import get_jd_with_playwright
+            from utils.ingestion import get_jd_with_playwright
 
             job_description = get_jd_with_playwright(jd_url)
             if job_description is None:
@@ -83,7 +80,7 @@ def render_candidate_coach() -> None:
             job_description = jd_text
 
         with st.spinner("Extracting text from Resume..."):
-            from ingestion import get_pdf_text_pdfplumber
+            from utils.ingestion import get_pdf_text_pdfplumber
 
             try:
                 resume_text = get_pdf_text_pdfplumber(uploaded_resume)
@@ -99,7 +96,7 @@ def render_candidate_coach() -> None:
                 rag_run_config = {}
                 enable_verbose = os.getenv("VERBOSE_RAG_LOGS", "false").lower() == "true"
                 if enable_verbose:
-                    from helper import DebugCallbackHandler
+                    from utils.logging_setup import DebugCallbackHandler
 
                     logger.info("🔧 Verbose RAG Logging is ENABLED")
                     rag_run_config = {"callbacks": [DebugCallbackHandler()]}
